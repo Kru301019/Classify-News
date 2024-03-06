@@ -2,64 +2,59 @@ from newsapi import NewsApiClient
 import pandas as pd
 import re
 import nltk
-nltk.download('punkt')
 from nltk.tokenize import word_tokenize
-nltk.download('stopwords')
 from nltk.corpus import stopwords
-9
-newsapi = NewsApiClient(api_key='733bed816c134dc299f9ae6d8b183989')
+import sklearn
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score
+from nltk.stem import WordNetLemmatizer
+from bs4 import BeautifulSoup
+import string 
 
-tech_articles = newsapi.get_everything(q='tech', language='en', \
-page_size=100)
-entertainment_articles = newsapi.get_everything(q='entertainment',\
-language='en', page_size=100)
-business_articles = newsapi.get_everything(q='business',\
-language='en', page_size=100)
-sports_articles = newsapi.get_everything(q='sports',\
-language='en', page_size=100)
-politics_articles = newsapi.get_everything(q='politics',\
-language='en', page_size=100)
-travel_articles = newsapi.get_everything(q='travel',\
-language='en', page_size=100)
-food_articles = newsapi.get_everything(q='food',\
-language='en', page_size=100)
-health_articles = newsapi.get_everything(q='health',\
-language='en', page_size=100)
+nltk.download('wordnet')
+nltk.download('punkt')
+nltk.download('stopwords')
 
-tech = pd.DataFrame(tech_articles['articles'])
-tech['category'] = 'Tech'
-entertainment = pd.DataFrame(entertainment_articles['articles'])
-entertainment['category'] = 'Entertainment'
-business = pd.DataFrame(business_articles['articles'])
-business['category'] = 'Business'
-sports = pd.DataFrame(sports_articles['articles'])
-sports['category'] = 'Sports'
-politics = pd.DataFrame(politics_articles['articles'])
-politics['category'] = 'Politics'
-travel = pd.DataFrame(travel_articles['articles'])
-travel['category'] = 'Travel'
-food = pd.DataFrame(food_articles['articles'])
-food['category'] = 'Food'
-health = pd.DataFrame(health_articles['articles'])
-health['category'] = 'Health'
-
-categories = [tech, entertainment, business, sports, politics, \
-travel, food, health]
-df = pd.concat(categories)
-df.info()
-
+df = pd.read_csv(r'C:\Users\krujo\OneDrive\Desktop\BBC-Dataset-News-Classification\dataset\dataset.csv', encoding='ISO-8859-1')
 
 def cleaned_desc_column(text):
+    text = re.sub(r'\d', '', text)  # Remove digits
+    text = re.sub(r'\s+', ' ', text)  # Remove extra whitespaces
+    text = text.lower().strip()  # Convert to lowercase and remove leading/trailing whitespaces
 
-    text = re.sub(r',', '', text)
+    # Remove HTML tags
+    soup = BeautifulSoup(text, 'html.parser')
+    text = soup.get_text()
 
-    text = re.sub(r'\s+', ' ', text)
+    # Remove special characters and punctuation
+    text = re.sub(r'[^\w\s]', '', text)  # Remove non-alphanumeric and non-whitespace characters
+    text = text.translate(str.maketrans('', '', string.punctuation))  # Remove punctuation
 
-    text = re.sub(r'\.', '', text)
+    # Tokenization and lemmatization
+    lemmatizer = WordNetLemmatizer()
+    tokens = word_tokenize(text)
+    lemmatized_tokens = [lemmatizer.lemmatize(token) for token in tokens]
 
-    text = re.sub(r"['\"]", '', text)
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    filtered_tokens = [token for token in lemmatized_tokens if token not in stop_words]
 
-    text = re.sub(r'\W', ' ', text)
-    
-    text_token = word_tokenize(text) 
-    stop_words = set(stopwords.words('English'))
+    return ' '.join(filtered_tokens)
+
+df['news_title'] = df['news'].apply(cleaned_desc_column)
+
+X = df['news_title']
+y = df['type']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=90)
+
+lr = Pipeline([('tfidf', TfidfVectorizer()),
+               ('clf', LogisticRegression(max_iter=1000, class_weight='balanced')),
+              ])
+
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+print(f"Accuracy is: {accuracy_score(y_pred, y_test)}")
