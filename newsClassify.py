@@ -14,10 +14,10 @@ import string
 # Uncomment these lines if you haven't downloaded nltk resources yet
 # nltk.download('wordnet')
 # nltk.download('punkt')
-nltk.download('stopwords')
+# nltk.download('stopwords')
 
 # Load the dataset
-df = pd.read_csv(r'C:\Users\krujo\OneDrive\Desktop\BBC-Dataset-News-Classification\dataset\dataset.csv', encoding='ISO-8859-1')
+df = pd.read_csv(r'G:\My Drive\Year 2\4.SETAP\submit\News-Categorization-Classifier-\dataset.csv', encoding='ISO-8859-1')
 
 # Function to clean and tokenize text
 def preprocess_text(text):
@@ -75,7 +75,7 @@ predictions = classifier.predict(X_test)
 
 # Evaluate and print the accuracy of the model
 accuracy = accuracy_score(predictions, y_test)
-#print(f"Model Accuracy: {accuracy}")
+print(f"Model Accuracy: {accuracy}")
 
 def predict_category(news_text):
     preprocessed_text = preprocess_text(news_text)
@@ -100,4 +100,4 @@ By then it was far too late with Mikel Merino's driven effort in the closing min
 """
 
 predicted_category = predict_category(new_article_text)
-print(f"Predicted Category: {predicted_category}")
+#print(f"Predicted Category: {predicted_category}")
